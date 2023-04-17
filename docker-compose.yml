@@ -25,6 +25,19 @@ services:
       - POSTGRES_PASSWORD=docker
       - POSTGRES_DB=postgres
 
+  # dbtest:
+  #   build: .docker/postgres
+  #   container_name: portfolio-dbtest
+  #   restart: always
+  #   tty: true
+  #   ports:
+  #     - "5433:5432"
+  #   volumes:
+  #     - .docker/dbdatatest:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_PASSWORD=docker
+  #     - POSTGRES_DB=postgres_test
+
   pgadmin:
     image: dpage/pgadmin4
     container_name: portfolio-pgadmin
