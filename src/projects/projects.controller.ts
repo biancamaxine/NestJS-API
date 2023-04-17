@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 
 import { CreateProjectDto } from './dtos/create-project.dto';
@@ -16,21 +17,17 @@ import { ProjectsService } from './projects.service';
 export class ProjectsController {
   constructor(private readonly service: ProjectsService) {}
 
-  @Get()
-  readAll() {
-    return this.service.read();
-  }
-
-  @Get(':id')
-  readOne(
-    @Param('id') id?: string,
-    // @Query()
-    // query?: {
-    //   title?: string;
-    //   owner?: string;
-    // },
+  @Get(['/', ':id'])
+  read(
+    @Param('id')
+    id?: string,
+    @Query()
+    query?: {
+      title?: string;
+      owner?: string;
+    },
   ) {
-    return this.service.read(id);
+    return this.service.read(id, query);
   }
 
   @Post()

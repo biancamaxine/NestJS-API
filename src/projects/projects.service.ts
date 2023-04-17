@@ -14,9 +14,31 @@ export class ProjectsService {
   @Inject('TAGS_REPOSITORY')
   private readonly TAGS: Repository<Tag>;
 
-  private async findAll() {
+  private async findAll(query?: { title?: string; owner?: string }) {
     return this.PROJECTS.find({
       relations: ['tags'],
+    }).then((projects) => {
+      if (query) {
+        if (query.title) {
+          projects = projects.filter((project) =>
+            project.title.includes(query.title),
+          );
+
+          if (query.owner)
+            projects = projects.filter((project) =>
+              project.owner.includes(query.owner),
+            );
+
+          return projects;
+          //
+        } else if (query.owner) {
+          projects = projects.filter((project) =>
+            project.owner.includes(query.owner),
+          );
+          return projects;
+        }
+      }
+      return projects;
     });
   }
 
@@ -30,9 +52,15 @@ export class ProjectsService {
     return project;
   }
 
-  async read(id?: string) {
+  async read(
+    id?: any,
+    query?: {
+      title?: string;
+      owner?: string;
+    },
+  ) {
     if (id) return this.findOne(id);
-    return this.findAll();
+    return this.findAll(query);
   }
 
   async create(createProjectDto: CreateProjectDto) {
