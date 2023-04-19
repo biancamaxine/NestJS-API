@@ -1,5 +1,13 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
+import { validate } from 'uuid';
 
 import { CreateProjectDto } from './dtos/create-project.dto';
 import { UpdateProjectDto } from './dtos/update-project.dto';
@@ -14,26 +22,32 @@ export class ProjectsService {
   @Inject('TAGS_REPOSITORY')
   private readonly TAGS: Repository<Tag>;
 
-  private async findAll(query?: { title?: string; owner?: string }) {
+  private async readAll(query?: { title?: string; owner?: string }) {
     return this.PROJECTS.find({
       relations: ['tags'],
     }).then((projects) => {
       if (query) {
         if (query.title) {
           projects = projects.filter((project) =>
-            project.title.includes(query.title),
+            project.title
+              .toLocaleLowerCase()
+              .includes(query.title.toLocaleLowerCase()),
           );
 
           if (query.owner)
             projects = projects.filter((project) =>
-              project.owner.includes(query.owner),
+              project.owner
+                .toLocaleLowerCase()
+                .includes(query.owner.toLocaleLowerCase()),
             );
 
           return projects;
           //
         } else if (query.owner) {
           projects = projects.filter((project) =>
-            project.owner.includes(query.owner),
+            project.owner
+              .toLocaleLowerCase()
+              .includes(query.owner.toLocaleLowerCase()),
           );
           return projects;
         }
@@ -42,13 +56,19 @@ export class ProjectsService {
     });
   }
 
-  private async findOne(id: string) {
+  private async readOne(id: string) {
+    if (!validate(id))
+      throw new HttpException(
+        `Propriety id is not valid!`,
+        HttpStatus.BAD_REQUEST,
+      );
+
     const project = await this.PROJECTS.findOne({
       where: { id },
       relations: ['tags'],
     });
 
-    if (!project) throw new NotFoundException(`Project ID: ${id} not found!`);
+    if (!project) throw new NotFoundException(`Project id: #${id} not found!`);
     return project;
   }
 
@@ -59,8 +79,8 @@ export class ProjectsService {
       owner?: string;
     },
   ) {
-    if (id) return this.findOne(id);
-    return this.findAll(query);
+    if (id) return this.readOne(id);
+    return this.readAll(query);
   }
 
   async create(createProjectDto: CreateProjectDto) {
@@ -72,10 +92,21 @@ export class ProjectsService {
       ...createProjectDto,
       tags,
     });
-    return this.PROJECTS.save(project);
+    try {
+      await this.PROJECTS.save(project);
+      return { message: 'Project created successfully!' };
+    } catch {
+      return new BadGatewayException('Server Failure! Please try again later!');
+    }
   }
 
   async update(id: string, updateProjectDto: UpdateProjectDto) {
+    if (!validate(id))
+      throw new HttpException(
+        `Propriety id is not valid!`,
+        HttpStatus.BAD_REQUEST,
+      );
+
     const tags =
       updateProjectDto.tags &&
       (await Promise.all(
@@ -88,17 +119,34 @@ export class ProjectsService {
       tags,
     });
 
-    if (!project) throw new NotFoundException(`Project ID: ${id} not found!`);
-    return this.PROJECTS.save(project);
+    if (!project) throw new NotFoundException(`Project id: #${id} not found!`);
+    try {
+      this.PROJECTS.save(project);
+      return { message: 'Project updated successfully!' };
+    } catch {
+      return new BadGatewayException('Server Failure! Please try again later!');
+    }
   }
 
   async delete(id: string) {
+    if (!validate(id))
+      throw new HttpException(
+        `Propriety id is not valid!`,
+        HttpStatus.BAD_REQUEST,
+      );
+
     const project = await this.PROJECTS.findOne({
       where: { id },
+      relations: ['tags'],
     });
 
-    if (!project) throw new NotFoundException(`Project ID: ${id} not found!`);
-    return this.PROJECTS.remove(project);
+    if (!project) throw new NotFoundException(`Project id: #${id} not found!`);
+    try {
+      this.PROJECTS.remove(project);
+      return { message: 'Project deleted successfuly!' };
+    } catch {
+      return new BadGatewayException('Server Failure! Please try again later!');
+    }
   }
 
   private async preloadTagByName(name: string) {

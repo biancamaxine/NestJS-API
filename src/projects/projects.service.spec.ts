@@ -59,7 +59,7 @@ describe('ProjectsService', () => {
     expect(expectOutputProject).toStrictEqual(newProject);
   });
 
-  it('should list projects', async () => {
+  it('should read projects', async () => {
     const expectOutputTags = [
       {
         id,
@@ -91,7 +91,7 @@ describe('ProjectsService', () => {
     expect(expectOutputProjects).toStrictEqual(projects);
   });
 
-  it('should gets a project', async () => {
+  it('should read a project', async () => {
     const expectOutputTags = [
       {
         id,
@@ -108,6 +108,7 @@ describe('ProjectsService', () => {
     };
 
     const mockProjectsRepository = {
+      read: jest.fn().mockReturnValue(Promise.resolve(expectOutputProject)),
       findOne: jest.fn().mockReturnValue(Promise.resolve(expectOutputProject)),
     };
 
@@ -161,5 +162,37 @@ describe('ProjectsService', () => {
 
     expect(mockProjectsRepository.save).toHaveBeenCalled();
     expect(expectOutputProject).toStrictEqual(updatedProject);
+  });
+
+  it('should deletes a project', async () => {
+    const expectOutputTags = [
+      {
+        id,
+        name: 'nestjs',
+        created_at: date,
+      },
+    ];
+    const expectOutputProject = {
+      id,
+      title: 'Test',
+      owner: 'bianca maxine',
+      description: 'Test description',
+      tags: expectOutputTags,
+    };
+
+    const mockProjectsRepository = {
+      delete: jest.fn().mockReturnValue(Promise.resolve(expectOutputProject)),
+      findOne: jest.fn().mockReturnValue(Promise.resolve(expectOutputProject)),
+      remove: jest.fn().mockReturnValue(Promise.resolve(expectOutputProject)),
+    };
+
+    //@ts-expect-error defined part of methods
+    service['PROJECTS'] = mockProjectsRepository;
+
+    const removedProject = await service.delete(id);
+
+    expect(mockProjectsRepository.remove).toHaveBeenCalled();
+    expect(mockProjectsRepository.findOne).toHaveBeenCalled();
+    expect(expectOutputProject).toStrictEqual(removedProject);
   });
 });
